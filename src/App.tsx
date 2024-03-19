@@ -1,26 +1,33 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import React, { useState, useEffect } from 'react';
+import { BrowserRouter, Route, Routes, Navigate } from 'react-router-dom';
+import Login from "./components/pages/Login/Login";
+import Main from "./components/pages/Main/Main";
+import "./App.css"
 
-function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
+const App = () => {
+    const [isLoggedIn, setIsLoggedIn] = useState<boolean>(true);
+
+    useEffect(() => {
+        const loggedInStatus: any = localStorage.getItem('isLoggedIn');
+        setIsLoggedIn(loggedInStatus);
+    }, []);
+
+    return (
+        <BrowserRouter>
+            <Routes>
+                <Route path="/login" element={<Login />} />
+                <Route path="/" element={<ProtectedRoute isLoggedIn={isLoggedIn}><Main/></ProtectedRoute>}/>
+            </Routes>
+        </BrowserRouter>
+    );
+}
+
+const ProtectedRoute = ({ isLoggedIn, children }: { isLoggedIn: boolean, children: any}) => {
+    if (isLoggedIn) {
+        return children;
+    } else {
+        return <Navigate to="/login" replace />;
+    }
 }
 
 export default App;
