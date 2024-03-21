@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import AlbumUploadButton from "../../components/AlbumUploadButton";
 
 interface FormData {
     username: string;
@@ -37,7 +36,7 @@ const Login: React.FC = () => {
                 localStorage.setItem('isLoggedIn', "true");
                 localStorage.setItem('refreshToken', response.data.refresh);
                 localStorage.setItem('accessToken', response.data.access);
-                navigate('/');
+                navigate('/main');
             } else {
                 console.error('Ошибка аутентификации:', response.data.detail);
             }
@@ -50,7 +49,6 @@ const Login: React.FC = () => {
         }
 
     };
-
 
     return  (
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-300">
