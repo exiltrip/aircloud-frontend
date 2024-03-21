@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Route, Routes, Navigate } from 'react-router-dom';
-import Login from "./components/pages/Login/Login";
-import Main from "./components/pages/Main/Main";
+import Login from "./pages/authorization/Login";
+import Main from "./pages/Main/Main";
 import "./App.css"
-import Register from "./components/pages/Login/Register";
+import Register from "./pages/authorization/Register";
 
 const App = () => {
     const [isLoggedIn, setIsLoggedIn] = useState<boolean>(true);
