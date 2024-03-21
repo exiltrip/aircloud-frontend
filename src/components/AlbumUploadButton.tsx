@@ -1,10 +1,3 @@
-/*
-Пример использования компонента:
-const AlbumComponent: React.FC<{ albumId: number; token: string }> = ({ albumId, token }) => {
-    return <AlbumUploadButton albumId={albumId} token={token} />;
-};
- */
-
 import React, { useState, useRef } from 'react';
 
 interface AlbumUploadButtonProps {
@@ -17,24 +10,17 @@ const AlbumUploadButton: React.FC<AlbumUploadButtonProps> = ({ albumId, token })
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        if (event.target.files) {
+        if (event.target.files && event.target.files[0]) {
             setFile(event.target.files[0]);
-            handleUpload(); // Автоматически запускает загрузку файла после его выбора
+            handleUpload(event.target.files[0]);
         }
     };
 
-
-    const handleUpload = async () => {
-        if (!file) {
-            alert('Please select a file first!');
-            return;
-        }
-        if (!albumId) {
-            return <div>Error: No album ID provided!</div>;
-        }
+    const handleUpload = async (selectedFile: File) => {
+        if (!selectedFile) return;
 
         const formData = new FormData();
-        formData.append('file', file);
+        formData.append('file', selectedFile);
         formData.append('file_type', 'photo');
         formData.append('album_id', albumId.toString());
 
@@ -71,10 +57,8 @@ const AlbumUploadButton: React.FC<AlbumUploadButtonProps> = ({ albumId, token })
                 onChange={handleFileChange}
             />
             <button onClick={handleClick}>Choose File</button>
-            <button onClick={handleUpload} disabled={!file}>Upload File</button>
         </div>
     );
-
 };
 
 export default AlbumUploadButton;
