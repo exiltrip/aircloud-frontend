@@ -85,7 +85,6 @@ const Login: React.FC = () => {
                     </button>
                 </form>
             </div>
-            <AlbumUploadButton albumId={13} token={'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzExNjUxODM5LCJpYXQiOjE3MTEwNDcwMzksImp0aSI6IjgxZWE0ZDg2ZTAyYTQyZmE4N2E3NmE1NzE5YTU4MDQ3IiwidXNlcl9pZCI6OH0.C0ra0mkMhQz57o_s4CEg8ok51iHZivS-ZFA6ZYXVLi0'} />;
         </div>
     );
 };
