@@ -36,7 +36,7 @@ const Login: React.FC = () => {
                 localStorage.setItem('isLoggedIn', "true");
                 localStorage.setItem('refreshToken', response.data.refresh);
                 localStorage.setItem('accessToken', response.data.access);
-                navigate('/');
+                navigate('/main');
             } else {
                 console.error('Ошибка аутентификации:', response.data.detail);
             }

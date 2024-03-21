@@ -17,6 +17,7 @@ const App = () => {
             <Routes>
                 <Route path="/login" element={<Login />} />
                 <Route path="/" element={<ProtectedRoute isLoggedIn={isLoggedIn}><Main/></ProtectedRoute>}/>
+                <Route path="/main" element={<ProtectedRoute isLoggedIn={isLoggedIn}><Main/></ProtectedRoute>}/>
             </Routes>
         </BrowserRouter>
     );
