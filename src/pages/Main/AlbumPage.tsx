@@ -111,6 +111,30 @@ const AlbumPage = () => {
     }, [albumId, token]);
 
 
+    const handleDeletePhoto = async (photoId: number) => {
+        if (!token || !albumId) {
+            console.error("Token or albumId is missing");
+            return;
+        }
+
+        try {
+            const response = await axios.delete(`https://api2.geliusihe.ru/accounts/album/${albumId}/delete-file/${photoId}/`, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+
+            if (response.status === 200) {
+                alert('Фотография удалена');
+                reloadPhotos();
+            } else {
+                alert('Не удалось удалить фотографию');
+            }
+        } catch (error) {
+            console.error('Ошибка при удалении фотографии:', error);
+            alert('Произошла ошибка при удалении фотографии');
+        }
+    };
 
 
 
@@ -126,10 +150,17 @@ const AlbumPage = () => {
             </div>
             <div className="flex flex-wrap">
                 {photos.map(photo => (
-                    <img key={photo.id} src={photo.blobUrl} alt="Фотография" className="m-1 cursor-pointer"
-                         style={{width: '200px', height: '200px', objectFit: 'cover'}}
-                         onClick={() => handlePhotoClick(photo.file)}/>
+                    <div key={photo.id} className="relative m-1" style={{ width: '200px', height: '200px' }}>
+                        <img src={photo.blobUrl} alt="Фотография" className="cursor-pointer object-cover w-full h-full"
+                             onClick={() => handlePhotoClick(photo.file)} />
+                        <button
+                            onClick={() => handleDeletePhoto(photo.id)}
+                            className="absolute top-0 right-0 bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-2 rounded-full">
+                            -
+                        </button>
+                    </div>
                 ))}
+
             </div>
             {selectedPhoto && (
                 <div
