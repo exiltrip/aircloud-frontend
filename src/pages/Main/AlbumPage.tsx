@@ -5,19 +5,20 @@ import AlbumUploadButton from "../../components/AlbumUploadButton";
 
 interface Photo {
     id: number;
-    file: string; // URL изображения
+    file: string;
     file_type: string;
     uploaded_at: string;
 }
 
 interface PhotoWithBlobUrl extends Photo {
-    blobUrl: string; // URL созданный с помощью URL.createObjectURL
+    blobUrl: string;
 }
 
 const AlbumPage = () => {
     const { albumId } = useParams<{ albumId: string }>();
     const [photos, setPhotos] = useState<PhotoWithBlobUrl[]>([]);
     const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
+    const [selectedPhotoType, setSelectedPhotoType] = useState<'image' | 'video' | null>(null);
     const token = localStorage.getItem('accessToken');
 
     const fetchImageAsBlobUrl = async (photo: Photo, token: string): Promise<PhotoWithBlobUrl> => {
@@ -61,19 +62,53 @@ const AlbumPage = () => {
         }
     }, [albumId, token]);
 
-    const handlePhotoClick = (photoFile: string) => {
-        if (token) {
-            const fullImageUrl = photoFile.replace('/preview', '');
-            fetchFullImageAsBlobUrl(fullImageUrl, token)
+    const handlePhotoClick = async (photo: PhotoWithBlobUrl) => {
+        if (!token) {
+            console.error('Token is not available');
+            return;
+        }
+
+        const isVideo = photo.file.endsWith('.mp4') || photo.file.endsWith('.mov');
+
+        if (isVideo) {
+            const videoUrl = photo.file.replace('http://', 'https://');
+            const videoObjectUrl = await fetchVideoWithAuthorization(videoUrl, token);
+            if (videoObjectUrl) {
+                setSelectedPhoto(videoObjectUrl);
+                setSelectedPhotoType('video');
+            } else {
+                console.error('Failed to load video');
+            }
+        } else {
+            const imageUrl = photo.file.replace('http://', 'https://');
+            fetchFullImageAsBlobUrl(imageUrl, token)
                 .then(blobUrl => {
                     setSelectedPhoto(blobUrl);
+                    setSelectedPhotoType('image');
                 })
                 .catch(error => {
-                    console.error('Error fetching full image:', error);
-                    alert('Не удалось загрузить изображение');
+                    console.error('Error fetching image:', error);
                 });
-        } else {
-            console.error('Token is not available');
+        }
+    };
+
+
+    const fetchVideoWithAuthorization = async (videoUrl: RequestInfo | URL, token: string) => {
+        try {
+            const response = await fetch(videoUrl, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            const videoBlob = await response.blob();
+            const videoObjectUrl = URL.createObjectURL(videoBlob);
+            return videoObjectUrl;
+        } catch (error) {
+            console.error('Error fetching video:', error);
+            return null;
         }
     };
 
@@ -149,10 +184,25 @@ const AlbumPage = () => {
                 </div>
             </div>
             <div className="flex flex-wrap">
-                {photos.map(photo => (
+                {photos.map((photo) => (
                     <div key={photo.id} className="relative m-1" style={{ width: '200px', height: '200px' }}>
-                        <img src={photo.blobUrl} alt="Фотография" className="cursor-pointer object-cover w-full h-full"
-                             onClick={() => handlePhotoClick(photo.file)} />
+                        {!photo.file_type.includes('video') ? (
+                            <img
+                                src={photo.blobUrl}
+                                alt="Фотография"
+                                className="object-cover w-full h-full"
+                                onClick={() => handlePhotoClick(photo)}
+                            />
+                        ) : (
+                            <video
+                                controls
+                                className="object-cover w-full h-full"
+                                onClick={() => handlePhotoClick(photo)}
+                            >
+                                <source src={photo.blobUrl} type="video/mp4" />
+                                Ваш браузер не поддерживает видео тег.
+                            </video>
+                        )}
                         <button
                             onClick={() => handleDeletePhoto(photo.id)}
                             className="absolute top-0 right-0 bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-2 rounded-full">
@@ -161,15 +211,25 @@ const AlbumPage = () => {
                     </div>
                 ))}
 
+
             </div>
+
             {selectedPhoto && (
                 <div
                     className="fixed top-0 left-0 w-full h-full bg-black bg-opacity-50 flex justify-center items-center"
                     onClick={handleCloseModal}>
-                    <img src={selectedPhoto} alt="Просмотр фотографии" style={{maxWidth: '80%', maxHeight: '80%'}}
-                         onClick={e => e.stopPropagation()}/>
+                    {selectedPhotoType === 'video' ? (
+                        <video controls autoPlay style={{ maxWidth: '80%', maxHeight: '80%' }} onClick={e => e.stopPropagation()}>
+                            <source src={selectedPhoto} type="video/mp4" />
+                            Ваш браузер не поддерживает видео тег.
+                        </video>
+                    ) : (
+                        <img src={selectedPhoto} alt="Просмотр фотографии" style={{ maxWidth: '80%', maxHeight: '80%' }} onClick={e => e.stopPropagation()} />
+                    )}
                 </div>
             )}
+
+
 
         </div>
     );
