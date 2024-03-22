@@ -12,6 +12,10 @@ interface Album {
 const Main: FC = () => {
     const token = localStorage.getItem("accessToken");
     const [albums, setAlbums] = useState<Album[]>([]);
+    const [showAlbumOptions, setShowAlbumOptions] = useState(false);
+    const [albumType, setAlbumType] = useState<'private' | 'group' | ''>('');
+    const [groupMembers, setGroupMembers] = useState<string[]>([]);
+    const [groupName, setGroupName] = useState('');
     const navigate = useNavigate();
 
     const getUserAlbums = () => {
@@ -40,17 +44,43 @@ const Main: FC = () => {
     };
 
     const handleAddAlbum = () => {
-        const albumName = prompt("Введите название альбома:");
-        if (albumName) {
-            axios.post("https://api2.geliusihe.ru/accounts/albums/create/", { name: albumName }, {
-                headers: {
-                    Authorization: `Bearer ${token}`
-                }
+        setShowAlbumOptions(!showAlbumOptions);
+        setAlbumType('');
+    };
+
+    const handleCreateGroupAlbum = () => {
+        if (!groupName.trim()) {
+            alert('Название альбома не может быть пустым');
+            return;
+        }
+        if (groupMembers.length === 0) {
+            alert('Добавьте хотя бы одного пользователя в групповой альбом');
+            return;
+        }
+        createAlbum(groupName, true);
+        setGroupName('');
+    };
+
+    const createAlbum = (albumName: string, isGroup: boolean = false) => {
+        const url = isGroup ? "https://api2.geliusihe.ru/accounts/group-albums/create/" : "https://api2.geliusihe.ru/accounts/albums/create/";
+        const data = isGroup ? { name: albumName, members: groupMembers } : { name: albumName };
+
+        axios.post(url, data, {
+            headers: { Authorization: `Bearer ${token}` }
+        })
+            .then(() => {
+                getUserAlbums();
+                setAlbumType('');
+                setShowAlbumOptions(false);
+                setGroupMembers([]);
             })
-                .then(() => {
-                    getUserAlbums();
-                })
-                .catch(err => console.log(err));
+            .catch(err => console.log(err));
+    };
+
+    const addGroupMember = () => {
+        const username = prompt("Введите имя пользователя:");
+        if (username && !groupMembers.includes(username)) {
+            setGroupMembers([...groupMembers, username]);
         }
     };
 
@@ -61,7 +91,33 @@ const Main: FC = () => {
                 <button onClick={handleAddAlbum} className="ml-4 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
                     +
                 </button>
+                {showAlbumOptions && (
+                    <div className="ml-4">
+                        <button onClick={() => setAlbumType('private')} className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">Приватный</button>
+                        <button onClick={() => setAlbumType('group')} className="ml-2 bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">Групповой</button>
+                    </div>
+                )}
             </div>
+            {albumType && (
+                <div className="mt-4">
+                    <input
+                        type="text"
+                        placeholder={albumType === 'group' ? "Введите название группового альбома" : "Введите название приватного альбома"}
+                        value={groupName}
+                        onChange={(e) => setGroupName(e.target.value)}
+                        className="border p-2"
+                    />
+                    {albumType === 'group' && (
+                        <div>
+                            <button onClick={addGroupMember} className="bg-yellow-500 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded">Добавить пользователя</button>
+                            {groupMembers.map(member => <div key={member}>{member}</div>)}
+                        </div>
+                    )}
+                    <button onClick={() => createAlbum(groupName, albumType === 'group')} className="ml-2 bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
+                        Создать {albumType === 'group' ? 'групповой' : 'приватный'} альбом
+                    </button>
+                </div>
+            )}
             <div className="grid grid-cols-4 gap-4">
                 {albums.map(album => (
                     <div key={album.id} className="border rounded-lg p-2 cursor-pointer" onClick={() => handleAlbumClick(album.id)}>

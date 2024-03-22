@@ -171,13 +171,11 @@ const AlbumPage = () => {
         }
     };
 
-
-
     return (
         <div>
             <div>
                 <div className="flex justify-start items-center mb-4">
-                    <h1 className="text-3xl font-bold">Фотографии альбома</h1>
+                    <h1 className="text-3xl font-bold">Содержимое альбома</h1>
                     {albumId && token && (
                         <AlbumUploadButton albumId={parseInt(albumId, 10)} token={token} onUploadSuccess={reloadPhotos} />
                     )}
@@ -192,28 +190,27 @@ const AlbumPage = () => {
                                 alt="Фотография"
                                 className="object-cover w-full h-full"
                                 onClick={() => handlePhotoClick(photo)}
+                                style={{cursor: 'pointer'}} // Добавлено здесь
                             />
                         ) : (
                             <video
                                 controls
                                 className="object-cover w-full h-full"
                                 onClick={() => handlePhotoClick(photo)}
+                                style={{cursor: 'pointer'}} // Добавлено здесь
                             >
-                                <source src={photo.blobUrl} type="video/mp4" />
+                                <source src={photo.blobUrl} type="video/mp4"/>
                                 Ваш браузер не поддерживает видео тег.
                             </video>
                         )}
                         <button
                             onClick={() => handleDeletePhoto(photo.id)}
                             className="absolute top-0 right-0 bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-2 rounded-full">
-                            -
+                        -
                         </button>
                     </div>
                 ))}
-
-
             </div>
-
             {selectedPhoto && (
                 <div
                     className="fixed top-0 left-0 w-full h-full bg-black bg-opacity-50 flex justify-center items-center"
@@ -228,9 +225,6 @@ const AlbumPage = () => {
                     )}
                 </div>
             )}
-
-
-
         </div>
     );
 };

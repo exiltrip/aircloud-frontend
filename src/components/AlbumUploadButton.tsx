@@ -61,7 +61,7 @@ const AlbumUploadButton: React.FC<AlbumUploadButtonProps> = ({ albumId, token, o
             />
             <button onClick={handleClick}
                     className="ml-4 bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
-                Загрузить
+                +
             </button>
         </div>
     );
