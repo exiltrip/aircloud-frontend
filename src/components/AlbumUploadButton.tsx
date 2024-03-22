@@ -3,9 +3,10 @@ import React, { useState, useRef } from 'react';
 interface AlbumUploadButtonProps {
     albumId: number;
     token: string;
+    onUploadSuccess: () => void;
 }
 
-const AlbumUploadButton: React.FC<AlbumUploadButtonProps> = ({ albumId, token }) => {
+const AlbumUploadButton: React.FC<AlbumUploadButtonProps> = ({ albumId, token, onUploadSuccess }) => {
     const [file, setFile] = useState<File | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -35,6 +36,7 @@ const AlbumUploadButton: React.FC<AlbumUploadButtonProps> = ({ albumId, token })
 
             if (response.ok) {
                 alert('Upload successful!');
+                onUploadSuccess();
             } else {
                 alert('Upload failed.');
             }
@@ -56,7 +58,9 @@ const AlbumUploadButton: React.FC<AlbumUploadButtonProps> = ({ albumId, token })
                 ref={fileInputRef}
                 onChange={handleFileChange}
             />
-            <button onClick={handleClick}>Choose File</button>
+            <button onClick={handleClick} className="ml-4 bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
+                Загрузить
+            </button>
         </div>
     );
 };

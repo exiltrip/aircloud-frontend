@@ -1,86 +1,73 @@
-import React, {FC, useEffect, useState} from 'react';
+import React, { FC, useEffect, useState } from 'react';
 import axios from "axios";
-
-interface Photo {
-    id: number;
-    src: string;
-    title: string;
-}
+import { useNavigate } from 'react-router-dom';
 
 interface Album {
     id: number;
-    title: string;
-    photos: Photo[];
+    name: string;
+    created_at: string;
+    is_private: boolean;
 }
 
-interface MainProps {}
+const Main: FC = () => {
+    const token = localStorage.getItem("accessToken");
+    const [albums, setAlbums] = useState<Album[]>([]);
+    const navigate = useNavigate();
 
-const Main: FC<MainProps> = () => {
-    const token = localStorage.getItem("accessToken")
-    const [allPhotos, setAllPhotos] = useState([{file: "", id: ""}]);
-    const [loaded, setLoaded] = useState(false);
-    const getAllPhotos = () => {
-        axios.get("https://api2.geliusihe.ru/accounts/files/", {
+    const getUserAlbums = () => {
+        axios.get("https://api2.geliusihe.ru/accounts/user_albums/", {
             headers: {
                 Authorization: `Bearer ${token}`
             }
         })
             .then(res => {
-                console.log(res.data)
-                setAllPhotos(res.data)
-                setLoaded(true)
+                setAlbums(res.data);
             })
-    }
-    const getPhoto = () => {
-        axios.get("https://api2.geliusihe.ru/uploads/user_6/qwert2_2023-06-25_21.12.27.jpg", {
-            headers: {
-                Authorization: `Bearer ${token}`
-            }
-        })
-            .then(res => {
-                console.log(res.data)
-            })
-    }
-    const albums: Album[] = [
-        {
-            id: 1,
-            title: 'Summer Vacation',
-            photos: [
-                { id: 1, src: 'photo1.jpg', title: 'Beach' },
-                { id: 2, src: 'photo2.jpg', title: 'Mountain' },
-                // Add more photos here
-            ]
-        },
-        // Add more albums here
-    ];
+            .catch(err => console.log(err));
+    };
 
     useEffect(() => {
-        getAllPhotos()
-        getPhoto()
-    }, [])
+        getUserAlbums();
+    }, []);
+
+    const formatDate = (dateString: string) => {
+        const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' };
+        return new Date(dateString).toLocaleDateString(undefined, options);
+    };
+
+    const handleAlbumClick = (albumId: number) => {
+        navigate(`/album/${albumId}`);
+    };
+
+    const handleAddAlbum = () => {
+        const albumName = prompt("Введите название альбома:");
+        if (albumName) {
+            axios.post("https://api2.geliusihe.ru/accounts/albums/create/", { name: albumName }, {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            })
+                .then(() => {
+                    getUserAlbums();
+                })
+                .catch(err => console.log(err));
+        }
+    };
+
     return (
         <div className="container mx-auto p-4">
-            <h1 className="text-2xl font-bold mb-4">Фото</h1>
-
-            <div className="w-1/4 m-4">
-                <div className="border rounded-lg p-2">
-                    <h2 className="text-xl font-semibold mb-2">Все фото</h2>
-                    <div className="flex flex-col">
-                        {/*<img src={loaded ? allPhotos[0].file : ""} alt={"Все фото"} className="w-full h-auto rounded-md" />*/}
-                        <p className="text-sm">Все фото</p>
-                    </div>
-                </div>
+            <div className="flex justify-start items-center mb-4">
+                <h1 className="text-2xl font-bold">Альбомы</h1>
+                <button onClick={handleAddAlbum} className="ml-4 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                    +
+                </button>
             </div>
-            <h1 className="text-2xl font-bold mb-4">Альбомы</h1>
             <div className="grid grid-cols-4 gap-4">
                 {albums.map(album => (
-                    <div key={album.id} className="border rounded-lg p-2">
-                        <h2 className="text-xl font-semibold mb-2">{album.title}</h2>
-                        <div className="grid grid-cols-2 gap-2">
-                            <div key={album.photos[0].id}>
-                                <img src={album.photos[0].src} alt={album.photos[0].title} className="w-full h-auto rounded-md" />
-                            </div>
-                        </div>
+                    <div key={album.id} className="border rounded-lg p-2 cursor-pointer" onClick={() => handleAlbumClick(album.id)}>
+                        <h2 className="text-xl font-semibold">{album.name}</h2>
+                        <p>Создан: {formatDate(album.created_at)}</p>
+                        <p>{album.is_private ? 'Приватный' : 'Публичный'}</p>
                     </div>
                 ))}
             </div>

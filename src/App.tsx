@@ -4,6 +4,7 @@ import Login from "./pages/authorization/Login";
 import Main from "./pages/Main/Main";
 import "./App.css"
 import Register from "./pages/authorization/Register";
+import AlbumPage from "./pages/Main/AlbumPage";
 
 const App = () => {
     const [isLoggedIn, setIsLoggedIn] = useState<boolean>(true);
@@ -18,6 +19,7 @@ const App = () => {
             <Routes>
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
+                <Route path="/album/:albumId" element={<AlbumPage />} />
                 <Route path="/" element={<ProtectedRoute isLoggedIn={isLoggedIn}><Main/></ProtectedRoute>}/>
             </Routes>
         </BrowserRouter>
