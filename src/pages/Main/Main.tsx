@@ -18,6 +18,37 @@ const Main: FC = () => {
     const [groupName, setGroupName] = useState('');
     const navigate = useNavigate();
 
+    const downloadAlbum = async (albumId: any) => {
+        if (!token) {
+            console.error("Token is not available");
+            return;
+        }
+
+        try {
+            const response = await axios.get(`https://api2.geliusihe.ru/accounts/albums/${albumId}/download/`, {
+                headers: { Authorization: `Bearer ${token}` },
+                responseType: 'blob', // Указываем, что ожидаем бинарные данные
+            });
+
+            // Создаем URL для скачивания
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            // Создаем временный элемент для скачивания
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `album_${albumId}.zip`); // Назначаем имя файла
+            document.body.appendChild(link);
+            link.click();
+
+            // Очистка после скачивания
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+
+        } catch (error) {
+            console.error('Ошибка при скачивании альбома:', error);
+        }
+    };
+
+
     const getUserAlbums = () => {
         axios.get("https://api2.geliusihe.ru/accounts/user_albums/", {
             headers: {
@@ -88,13 +119,18 @@ const Main: FC = () => {
         <div className="container mx-auto p-4">
             <div className="flex justify-start items-center mb-4">
                 <h1 className="text-2xl font-bold">Альбомы</h1>
-                <button onClick={handleAddAlbum} className="ml-4 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                <button onClick={handleAddAlbum}
+                        className="ml-4 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
                     +
                 </button>
                 {showAlbumOptions && (
                     <div className="ml-4">
-                        <button onClick={() => setAlbumType('private')} className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">Приватный</button>
-                        <button onClick={() => setAlbumType('group')} className="ml-2 bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">Групповой</button>
+                        <button onClick={() => setAlbumType('private')}
+                                className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">Приватный
+                        </button>
+                        <button onClick={() => setAlbumType('group')}
+                                className="ml-2 bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">Групповой
+                        </button>
                     </div>
                 )}
             </div>
@@ -109,24 +145,37 @@ const Main: FC = () => {
                     />
                     {albumType === 'group' && (
                         <div>
-                            <button onClick={addGroupMember} className="bg-yellow-500 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded">Добавить пользователя</button>
+                            <button onClick={addGroupMember}
+                                    className="bg-yellow-500 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded">Добавить
+                                пользователя
+                            </button>
                             {groupMembers.map(member => <div key={member}>{member}</div>)}
                         </div>
                     )}
-                    <button onClick={() => createAlbum(groupName, albumType === 'group')} className="ml-2 bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
+                    <button onClick={() => createAlbum(groupName, albumType === 'group')}
+                            className="ml-2 bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
                         Создать {albumType === 'group' ? 'групповой' : 'приватный'} альбом
                     </button>
                 </div>
             )}
             <div className="grid grid-cols-4 gap-4">
                 {albums.map(album => (
-                    <div key={album.id} className="border rounded-lg p-2 cursor-pointer" onClick={() => handleAlbumClick(album.id)}>
+                    <div key={album.id} className="border rounded-lg p-2 cursor-pointer"
+                         onClick={() => handleAlbumClick(album.id)}>
                         <h2 className="text-xl font-semibold">{album.name}</h2>
                         <p>Создан: {formatDate(album.created_at)}</p>
-                        <p>{album.is_private ? 'Приватный' : 'Публичный'}</p>
+                        <p>{album.is_private ? 'Приватный' : 'Групповой'}</p>
+                        <button onClick={(e) => {
+                            e.stopPropagation();
+                            downloadAlbum(album.id);
+                        }} className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mt-2">
+                            Скачать
+                        </button>
                     </div>
                 ))}
             </div>
+
+
         </div>
     );
 };
