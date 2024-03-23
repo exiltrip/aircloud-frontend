@@ -11,8 +11,14 @@ interface Photo {
     uploaded_at: string;
 }
 
+
 interface PhotoWithBlobUrl extends Photo {
     blobUrl: string;
+}
+
+interface SearchResult {
+    id: number;
+    image_url: string;
 }
 
 const AlbumPage = () => {
@@ -23,13 +29,52 @@ const AlbumPage = () => {
     const token = localStorage.getItem('accessToken');
     const [selectedPhotosIds, setSelectedPhotosIds] = useState<number[]>([]);
     const [selectedPhotoId, setSelectedPhotoId] = useState<number | null>(null);
+    const [filteredPhotos, setFilteredPhotos] = useState<PhotoWithBlobUrl[]>([]);
+    const [tag, setTag] = useState('');
+
+    const handleSearch = async (tag: string) => {
+        if (!token) {
+            console.error("Token is not available");
+            return;
+        }
+
+        const encodedTag = encodeURIComponent(tag);
+
+        try {
+            const response = await fetch(`https://api2.geliusihe.ru/accounts/images-by-tag/?tag=${encodedTag}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+
+            const data = await response.json();
+            const photosWithBlobUrls = await Promise.all(data.images.map((photo: SearchResult) => fetchImageAsBlobUrl({
+                id: photo.id,
+                file: photo.image_url,
+                file_type: 'image',
+                uploaded_at: ''
+            }, token)));
+
+            setFilteredPhotos(photosWithBlobUrls);
+        } catch (error) {
+            console.error('Error during the search:', error);
+        }
+    };
+
+    const clearFilter = () => {
+        setFilteredPhotos([]);
+        setTag('');
+    };
+
 
 
     const togglePhotoSelection = (id: number) => {
         setSelectedPhotosIds(prev => prev.includes(id) ? prev.filter(photoId => photoId !== id) : [...prev, id]);
     };
-
-
     const downloadSelectedPhotos = async () => {
         if (selectedPhotosIds.length > 0) {
             try {
@@ -214,6 +259,7 @@ const AlbumPage = () => {
 
     return (
         <div>
+            {/* Ваши кнопки и заголовок */}
             <div>
                 <button onClick={downloadSelectedPhotos} className="py-2 px-4 bg-blue-500 text-white rounded">
                     Скачать выбранные
@@ -226,8 +272,30 @@ const AlbumPage = () => {
                     )}
                 </div>
             </div>
+            <div className="mb-4">
+                <input
+                    type="text"
+                    value={tag}
+                    onChange={(e) => setTag(e.target.value)}
+                    placeholder="Введите тег..."
+                    className="mr-2 p-2 border-2 border-gray-200"
+                />
+                <button
+                    onClick={() => handleSearch(tag)}
+                    className="py-2 px-4 bg-green-500 text-white rounded mr-2"
+                >
+                    Применить фильтр
+                </button>
+                <button
+                    onClick={clearFilter}
+                    className="py-2 px-4 bg-red-500 text-white rounded"
+                >
+                    Очистить фильтр
+                </button>
+            </div>
+            {/* Отображение фотографий */}
             <div className="flex flex-wrap">
-                {photos.map((photo) => (
+                {(filteredPhotos.length > 0 ? filteredPhotos : photos).map((photo) => (
                     <div key={photo.id} className="relative m-1" style={{width: '200px', height: '200px'}}>
                         {!photo.file_type.includes('video') ? (
                             <img
@@ -257,8 +325,8 @@ const AlbumPage = () => {
                         <span
                             className={`absolute top-0 left-0 p-1 ${selectedPhotosIds.includes(photo.id) ? 'bg-blue-500' : 'bg-gray-500'}`}
                             onClick={() => togglePhotoSelection(photo.id)}>
-            &#10003;
-        </span>
+✓
+</span>
                     </div>
                 ))}
             </div>
@@ -286,7 +354,6 @@ const AlbumPage = () => {
                                      style={{maxWidth: '100%', maxHeight: '100%', objectFit: 'contain'}}/>
                             )}
                         </div>
-                        {/* Позиционируем прямоугольник с использованием margin слева от изображения/видео, чтобы избежать наложения */}
                         <div style={{
                             width: '300px',
                             height: '500px',
@@ -297,9 +364,8 @@ const AlbumPage = () => {
                         </div>
                     </div>
                 </div>
+
             )}
-
-
         </div>
     );
 };
