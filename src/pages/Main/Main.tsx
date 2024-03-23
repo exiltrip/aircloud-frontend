@@ -70,27 +70,17 @@ const Main: FC = () => {
         return new Date(dateString).toLocaleDateString(undefined, options);
     };
 
-    const handleAlbumClick = (albumId: number) => {
-        navigate(`/album/${albumId}`);
+    const handleAlbumClick = (album: Album) => {
+        console.log(`Переход к альбому ${album.id}, приватный: ${album.is_private}`);
+        navigate(`/album/${album.id}`, { state: { is_private: album.is_private } });
     };
+
 
     const handleAddAlbum = () => {
         setShowAlbumOptions(!showAlbumOptions);
         setAlbumType('');
     };
 
-    const handleCreateGroupAlbum = () => {
-        if (!groupName.trim()) {
-            alert('Название альбома не может быть пустым');
-            return;
-        }
-        if (groupMembers.length === 0) {
-            alert('Добавьте хотя бы одного пользователя в групповой альбом');
-            return;
-        }
-        createAlbum(groupName, true);
-        setGroupName('');
-    };
 
     const createAlbum = (albumName: string, isGroup: boolean = false) => {
         const url = isGroup ? "https://api2.geliusihe.ru/accounts/group-albums/create/" : "https://api2.geliusihe.ru/accounts/albums/create/";
@@ -161,7 +151,7 @@ const Main: FC = () => {
             <div className="grid grid-cols-4 gap-4">
                 {albums.map(album => (
                     <div key={album.id} className="border rounded-lg p-2 cursor-pointer"
-                         onClick={() => handleAlbumClick(album.id)}>
+                         onClick={() => handleAlbumClick(album)}>
                         <h2 className="text-xl font-semibold">{album.name}</h2>
                         <p>Создан: {formatDate(album.created_at)}</p>
                         <p>{album.is_private ? 'Приватный' : 'Групповой'}</p>
