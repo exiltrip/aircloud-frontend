@@ -63,9 +63,7 @@ const AlbumPage = () => {
     const [longitude, setLongitude] = useState(0)
     function toDecimalDegrees(degrees: number, minutes: number, seconds: number): number {
             return degrees + minutes / 60 + seconds / 3600;
-        }
-
-
+    }
     const location = useLocation();
     const {is_private} = location.state || {is_private: true};
     const {albumId} = useParams<{ albumId: string }>();
@@ -109,11 +107,9 @@ const AlbumPage = () => {
     const [members, setMembers] = useState<Member[]>([]);
     const [newMemberUsername, setNewMemberUsername] = useState('');
 
-    useEffect(() => {
-
-
-    const latMatch = metaData.GPSInfo.match(/2: \(([0-9.]+), ([0-9.]+), ([0-9.]+)\)/);
-    const lonMatch = metaData.GPSInfo.match(/4: \(([0-9.]+), ([0-9.]+), ([0-9.]+)\)/);
+    const getGPSData = () => {
+        const latMatch = metaData.GPSInfo.match(/2: \(([0-9.]+), ([0-9.]+), ([0-9.]+)\)/);
+        const lonMatch = metaData.GPSInfo.match(/4: \(([0-9.]+), ([0-9.]+), ([0-9.]+)\)/);
         if (latMatch && lonMatch) {
         const latDegrees = toDecimalDegrees(parseFloat(latMatch[1]), parseFloat(latMatch[2]), parseFloat(latMatch[3]));
         const lonDegrees = toDecimalDegrees(parseFloat(lonMatch[1]), parseFloat(lonMatch[2]), parseFloat(lonMatch[3]));
@@ -128,7 +124,9 @@ const AlbumPage = () => {
     } else {
         console.log('Не удалось извлечь долготу и широту из GPS-информации.');
     }
-    }, [metaData])
+    }
+
+
 
 
         useEffect(() => {
@@ -314,7 +312,11 @@ const AlbumPage = () => {
             fetchMetaData(photo, token)
                                 .then(res => {
                                     setMetaData(res)
+                                    getGPSData()
                                 })
+                .catch(error => {
+                    console.error(error)
+                })
             if (isVideo) {
                 const videoUrl = photo.file.replace('http://', 'https://');
                 const videoObjectUrl = await fetchVideoWithAuthorization(videoUrl, token);
@@ -542,7 +544,7 @@ const AlbumPage = () => {
                                 }}>
                                     <TagControl fileId={selectedPhotoId}/>
                                 </div>
-                                <MapContainer
+                                { latitude == 0 ? "" : <MapContainer
                                 // @ts-ignore
                                 center={[latitude, longitude]} zoom={13} style={{ height: '210px', width: '300px' }}>
                                 <TileLayer
@@ -552,6 +554,7 @@ const AlbumPage = () => {
                                 />
                                 <Marker position={[latitude, longitude]}/>
                                 </MapContainer>
+                                }
                             </div>
                         </div>
 
