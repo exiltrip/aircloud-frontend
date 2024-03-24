@@ -4,7 +4,8 @@ import { useParams } from 'react-router-dom';
 import AlbumUploadButton from "../../components/AlbumUploadButton";
 import TagControl from "../../components/TagControl";
 import { useLocation } from 'react-router-dom';
-
+import { MapContainer, TileLayer, Marker } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
 interface Photo {
     id: number;
     file: string;
@@ -26,11 +27,78 @@ interface SearchResult {
     image_url: string;
 }
 
+interface Metadata {
+    ImageWidth: number;
+    ImageLength: number;
+    GPSInfo: string; // Здесь можно использовать интерфейс для GPSInfo, если он будет более сложным
+    ResolutionUnit: number;
+    ExifOffset: number;
+    Make: string;
+    Model: string;
+    Orientation: number;
+    DateTime: string;
+    YCbCrPositioning: number;
+    XResolution: number;
+    YResolution: number;
+    ExifVersion: string;
+    SceneType: string;
+    ApertureValue: number;
+    ColorSpace: number;
+    ExposureBiasValue: number;
+    MaxApertureValue: number;
+    ExifImageHeight: number;
+    BrightnessValue: number;
+    DateTimeOriginal: string;
+    FlashPixVersion: string;
+    WhiteBalance: number;
+    ExifInteroperabilityOffset: number;
+    Flash: number;
+    ExifImageWidth: number;
+    ComponentsConfiguration: string;
+}
+
 const AlbumPage = () => {
+
+    const [latitude, setLatitude] = useState(0)
+    const [longitude, setLongitude] = useState(0)
+    function toDecimalDegrees(degrees: number, minutes: number, seconds: number): number {
+            return degrees + minutes / 60 + seconds / 3600;
+        }
+
+
     const location = useLocation();
     const {is_private} = location.state || {is_private: true};
     const {albumId} = useParams<{ albumId: string }>();
     const [photos, setPhotos] = useState<PhotoWithBlobUrl[]>([]);
+    const [metaData, setMetaData] = useState<Metadata>({
+    "ImageWidth": 0,
+    "ImageLength": 0,
+    "GPSInfo": "",
+    "ResolutionUnit": 0,
+    "ExifOffset": 0,
+    "Make": "",
+    "Model": "",
+    "Orientation": 0,
+    "DateTime": "",
+    "YCbCrPositioning": 0,
+    "XResolution": 0,
+    "YResolution": 0,
+    "ExifVersion": "0",
+    "SceneType": "",
+    "ApertureValue": 0,
+    "ColorSpace": 0,
+    "ExposureBiasValue": 0,
+    "MaxApertureValue": 0,
+    "ExifImageHeight": 0,
+    "BrightnessValue": 0,
+    "DateTimeOriginal": "",
+    "FlashPixVersion": "",
+    "WhiteBalance": 0,
+    "ExifInteroperabilityOffset": 0,
+    "Flash": 0,
+    "ExifImageWidth": 0,
+    "ComponentsConfiguration": ""
+    });
     const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
     const [selectedPhotoType, setSelectedPhotoType] = useState<'image' | 'video' | null>(null);
     const token = localStorage.getItem('accessToken');
@@ -41,6 +109,26 @@ const AlbumPage = () => {
     const [members, setMembers] = useState<Member[]>([]);
     const [newMemberUsername, setNewMemberUsername] = useState('');
 
+    useEffect(() => {
+
+
+    const latMatch = metaData.GPSInfo.match(/2: \(([0-9.]+), ([0-9.]+), ([0-9.]+)\)/);
+    const lonMatch = metaData.GPSInfo.match(/4: \(([0-9.]+), ([0-9.]+), ([0-9.]+)\)/);
+        if (latMatch && lonMatch) {
+        const latDegrees = toDecimalDegrees(parseFloat(latMatch[1]), parseFloat(latMatch[2]), parseFloat(latMatch[3]));
+        const lonDegrees = toDecimalDegrees(parseFloat(lonMatch[1]), parseFloat(lonMatch[2]), parseFloat(lonMatch[3]));
+
+        const latDirection = metaData.GPSInfo.includes("1: 'N'") ? 1 : -1;
+        const lonDirection = metaData.GPSInfo.includes("3: 'E'") ? 1 : -1;
+
+        setLatitude(latDegrees * latDirection)
+        setLongitude(lonDegrees * lonDirection)
+
+        console.log(`Latitude: ${latitude}, Longitude: ${longitude}`);
+    } else {
+        console.log('Не удалось извлечь долготу и широту из GPS-информации.');
+    }
+    }, [metaData])
 
 
         useEffect(() => {
@@ -159,7 +247,33 @@ const AlbumPage = () => {
             return {...photo, blobUrl};
         };
 
-        const fetchFullImageAsBlobUrl = async (photoFile: string, token: string): Promise<string> => {
+ const fetchMetaData = async (photo: Photo, token: string): Promise<Metadata> => {
+    let fileName = photo.file.split('/').pop();
+    if (fileName) {
+        const dotIndex = fileName.lastIndexOf('.');
+        if (dotIndex !== -1) {
+            fileName = fileName.substring(0, dotIndex);
+        }
+    }
+
+    const userName = photo.file.split('/')[4];
+    const metadataUrl = `https://api2.geliusihe.ru/metadata/${userName}/metadata/${fileName}.json`;
+
+    const response = await fetch(metadataUrl, {
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    });
+
+    if (!response.ok) {
+        throw new Error(`Ошибка HTTP: ${response.status}`);
+    }
+
+    const metadata: Metadata = await response.json();
+    return metadata;
+};
+
+         const fetchFullImageAsBlobUrl = async (photoFile: string, token: string): Promise<string> => {
             const response = await fetch(photoFile.replace('http://', 'https://'), {
                 headers: {
                     Authorization: `Bearer ${token}`,
@@ -171,7 +285,6 @@ const AlbumPage = () => {
             const imageBlob = await response.blob();
             return URL.createObjectURL(imageBlob);
         };
-
 
         useEffect(() => {
             if (albumId && token) {
@@ -198,7 +311,10 @@ const AlbumPage = () => {
             console.log(photo.id)
 
             const isVideo = photo.file.endsWith('.mp4') || photo.file.endsWith('.mov');
-
+            fetchMetaData(photo, token)
+                                .then(res => {
+                                    setMetaData(res)
+                                })
             if (isVideo) {
                 const videoUrl = photo.file.replace('http://', 'https://');
                 const videoObjectUrl = await fetchVideoWithAuthorization(videoUrl, token);
@@ -210,6 +326,7 @@ const AlbumPage = () => {
                 }
             } else {
                 const imageUrl = photo.file.replace('http://', 'https://');
+
                 fetchFullImageAsBlobUrl(imageUrl, token)
                     .then(blobUrl => {
                         setSelectedPhoto(blobUrl);
@@ -299,8 +416,7 @@ const AlbumPage = () => {
                 alert('Произошла ошибка при удалении фотографии');
             }
         };
-
-        return (
+    return (
             <div>
                 <div className="album-page-container">
                     {!is_private && (
@@ -395,7 +511,7 @@ const AlbumPage = () => {
                 </div>
                 {selectedPhoto && (
                     <div
-                        className="fixed top-0 left-0 w-full h-full bg-black bg-opacity-50 flex justify-center items-center"
+                        className="fixed top-0 left-0 w-full h-full bg-black bg-opacity-50 flex flex-col justify-center items-center"
                         onClick={handleCloseModal}>
                         <div className="flex"
                              style={{maxWidth: '90%', maxHeight: '90%', justifyContent: 'center', alignItems: 'center'}}
@@ -417,15 +533,29 @@ const AlbumPage = () => {
                                          style={{maxWidth: '100%', maxHeight: '100%', objectFit: 'contain'}}/>
                                 )}
                             </div>
-                            <div style={{
-                                width: '300px',
-                                height: '500px',
-                                backgroundColor: 'white',
-                                marginLeft: '20px',
-                            }}>
-                                <TagControl fileId={selectedPhotoId}/>
+                            <div className="flex flex-col items-center ml-5">
+                                <div style={{
+                                    width: '300px',
+                                    height: '300px',
+                                    padding: '15px',
+                                    backgroundColor: 'white',
+                                }}>
+                                    <TagControl fileId={selectedPhotoId}/>
+                                </div>
+                                <MapContainer
+                                // @ts-ignore
+                                center={[latitude, longitude]} zoom={13} style={{ height: '210px', width: '300px' }}>
+                                <TileLayer
+                                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                                    // @ts-ignore
+                                    attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
+                                />
+                                <Marker position={[latitude, longitude]}/>
+                                </MapContainer>
                             </div>
                         </div>
+
+
                     </div>
 
                 )}
